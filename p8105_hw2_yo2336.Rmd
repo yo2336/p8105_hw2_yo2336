@@ -15,7 +15,7 @@ Read Mr.Trash excel data and name data frame as trash_df
 trash_df = 
   read_excel("data/trash_wheel.xlsx", sheet = "Mr. Trash Wheel") %>%
   janitor::clean_names() %>%
-  select(-'month', -'year', -'date', -"x15", -"x16", -"x17") %>%
+  select(-"month", -"year", -"date", -"x15", -"x16", -"x17") %>%
   drop_na(dumpster) %>%
   mutate(sports_balls = as.integer(sports_balls))
 ```
@@ -50,5 +50,24 @@ precip_df =
 Precipitation Data Description
 ```{r}
 
+```
+
+
+# Problem 2
+
+```{r}
+pols_month_df =
+  read_csv("data/fivethirtyeight_datasets/pols_month.csv") %>%
+  separate(mon, into = c("year", "month", "day")) %>%
+  mutate(month = month.name[as.numeric(month)]) %>%
+  select(-"day") %>%
+  relocate(year, month, prez_gop, prez_dem) %>%
+  rename(gop = prez_gop, dem = prez_dem) %>%
+  pivot_longer(
+    gop:dem,
+    names_to = "president",
+    names_transform = list(president = as.character),
+    values_drop_na = TRUE) %>%
+  relocate(year, month, president)
 ```
 
