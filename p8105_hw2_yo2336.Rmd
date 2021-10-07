@@ -119,6 +119,8 @@ Description
 
 # Problem 3
 
+Load and Clean baby_name data
+
 ```{r}
 baby_name_df =
   read_csv("data/Popular_Baby_Names.csv") %>%
@@ -127,5 +129,18 @@ baby_name_df =
   relocate(year_of_birth, rank, childs_first_name) %>%
   arrange(year_of_birth, ethnicity)
   
+```
+
+Create Table for name Olivia
+
+```{r}
+baby_name_tbl = 
+    pivot_wider(baby_name_df,
+           names_from = "ethnicity",
+           values_from = "rank") %>%
+    filter(childs_first_name == "OLIVIA") %>%
+    select(-c("childs_first_name", "gender", "count"))
+knitr::kable(baby_name_tbl, caption = "Rank in Popularity for Name Olivia")
+               
 ```
 
