@@ -60,6 +60,7 @@ Part 1 Clean pols-month.csv
 ```{r}
 pols_month_df =
   read_csv("data/fivethirtyeight_datasets/pols_month.csv") %>%
+  janitor::clean_names() %>%
   separate(mon, into = c("year", "month", "day")) %>%
   mutate(month = month.name[as.numeric(month)]) %>%
   relocate(year, month, prez_gop, prez_dem) %>%
@@ -78,18 +79,53 @@ Part 2 Clean snp.csv
 ```{r}
 snp_df =
   read_csv("data/fivethirtyeight_datasets/snp.csv") %>%
-  separate(date, into = c("month", "day", "year")) %>%
+  janitor::clean_names() %>%
+  mutate(date = lubridate::mdy(date)) %>%
+  separate(date, into = c("year", "month", "day")) %>%
+  arrange(year, month) %>%
   mutate(month = month.name[as.numeric(month)]) %>%
-  select(-"day") %>%
-  relocate(year, month)
+  select(-"day")
 ```
 
 Part 3 Clean unemployment.csv and merge
 
 ```{r}
 unemp_df =
-  read_csv("data/fivethirtyeight_datasets/unemployment.csv") 
-  
+  read_csv("data/fivethirtyeight_datasets/unemployment.csv") %>%
+  janitor::clean_names() %>%
+  pivot_longer(
+    jan:dec,
+    names_to = "month",
+    values_to = "percent_unemployment")
+```
+
+Join snp and pols data
+
+```{r}
+snp_pols_df =
+  full_join(snp_df, pols_month_df) %>%
+  mutate(year = as.numeric(year))
+```
+
+Join combined snp_pols with unemployment
+
+```{r}
+snp_pols_unemp_df =
+  left_join(snp_pols_df, unemp_df, by = "year")
+```
+
+Description
+
+
+# Problem 3
+
+```{r}
+baby_name_df =
+  read_csv("data/Popular_Baby_Names.csv") %>%
+  janitor::clean_names() %>%
+  unique() %>%
+  relocate(year_of_birth, rank, childs_first_name) %>%
+  arrange(year_of_birth, ethnicity)
   
 ```
 
