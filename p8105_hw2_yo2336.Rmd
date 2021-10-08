@@ -13,7 +13,7 @@ library(readxl)
 Read Mr.Trash excel data and name data frame as trash_df
 ```{r}
 trash_df = 
-  read_excel("data/trash_wheel.xlsx", sheet = "Mr. Trash Wheel") %>%
+  read_excel("data/trash_wheel_updated.xlsx", sheet = "Mr. Trash Wheel") %>%
   janitor::clean_names() %>%
   select(-"month", -"year", -"date", -"x15", -"x16", -"x17") %>%
   drop_na(dumpster) %>%
@@ -24,7 +24,7 @@ trash_df =
 Precipitation Data
 ```{r}
 precip_df_2018 =
-  read_excel("data/trash_wheel.xlsx", sheet = "2018 Precipitation", skip = 1) %>%
+  read_excel("data/trash_wheel_updated.xlsx", sheet = "2018 Precipitation", skip = 1) %>%
   janitor::clean_names() %>%
   rename(precipitation_in = total) %>%
   drop_na(month) %>%
@@ -33,7 +33,7 @@ precip_df_2018 =
 
 
 precip_df_2019 =
-  read_excel("data/trash_wheel.xlsx", sheet = "2019 Precipitation", skip = 1) %>%
+  read_excel("data/trash_wheel_updated.xlsx", sheet = "2019 Precipitation", skip = 1) %>%
   janitor::clean_names() %>%
   rename(precipitation_in = total) %>%
   drop_na(month, precipitation_in) %>%
@@ -128,9 +128,11 @@ baby_name_df =
   unique() %>%
   relocate(year_of_birth, rank, childs_first_name) %>%
   arrange(year_of_birth, ethnicity) %>%
-  mutate(ethnicity = str_replace_all(ethnicity, c("ASIAN" = "ASIAN AND PACIFIC ISLANDER", 
-                  "BLACK" = "BLACK NON HISPANIC", 
-                  "WHITE" = "WHITE NON HISPANIC")))
+  mutate(ethnicity = recode(ethnicity, "ASIAN AND PACI" = "ASIAN AND PACIFIC ISLANDER", 
+                  "BLACK NON HISP" = "BLACK NON HISPANIC", 
+                  "WHITE NON HISP" = "WHITE NON HISPANIC"),
+         ethnicity = str_to_lower(ethnicity),
+         childs_first_name = str_to_lower(childs_first_name))
   
 ```
 
@@ -141,9 +143,40 @@ baby_name_tbl =
     pivot_wider(baby_name_df,
            names_from = "ethnicity",
            values_from = "rank") %>%
-    filter(childs_first_name == "OLIVIA") %>%
+    filter(childs_first_name == "olivia") %>%
     select(-c("childs_first_name", "gender", "count"))
-knitr::kable(baby_name_tbl, caption = "Rank in Popularity for Baby's Name Olivia")
-               
+aapi_olivia = select(baby_name_tbl, year_of_birth, "asian and pacific islander") %>%
+  drop_na("asian and pacific islander")
+bnh_olivia = select(baby_name_tbl, year_of_birth, "black non hispanic") %>%
+  drop_na("black non hispanic")
+h_olivia = select(baby_name_tbl, year_of_birth, "hispanic") %>%
+  drop_na("hispanic")
+wnh_olivia = select(baby_name_tbl, year_of_birth, "white non hispanic") %>%
+  drop_na("white non hispanic")
+olivia_tbl = left_join(aapi_olivia, left_join(bnh_olivia, left_join(h_olivia, wnh_olivia)))
+knitr::kable(olivia_tbl, caption = "Rank in Popularity for Baby's Name Olivia")
+```
+
+Table for popular male name
+
+```{r}
+baby_name_male =
+  filter(baby_name_df, gender == "MALE", rank <= 5) %>%
+  pivot_wider(names_from = "ethnicity",
+           values_from = "rank") %>%
+    select(-"count")
+```
+
+Scatter plot for names of white non hispanic male born in 2016
+
+```{r}
+white_male_2016 =
+  filter(baby_name_df, gender == "MALE", 
+         ethnicity == "white non hispanic", 
+         year_of_birth == 2016)
+
+ggplot(white_male_2016, aes(x = rank, y = count)) +
+  geom_point() +
+    labs(title = "Popular Names of White Non-Hispanic Male Born in 2016")
 ```
 
