@@ -69,7 +69,7 @@ pols_month_df =
     gop:dem,
     names_to = "president",
     values_to = "prez_numeric") %>%
-  filter(prez_numeric == 1) %>%
+  filter(prez_numeric != 0) %>%
   select(-c("prez_numeric", "day")) %>%
   relocate(year, month, president)
 ```
@@ -127,7 +127,10 @@ baby_name_df =
   janitor::clean_names() %>%
   unique() %>%
   relocate(year_of_birth, rank, childs_first_name) %>%
-  arrange(year_of_birth, ethnicity)
+  arrange(year_of_birth, ethnicity) %>%
+  mutate(ethnicity = str_replace_all(ethnicity, c("ASIAN" = "ASIAN AND PACIFIC ISLANDER", 
+                  "BLACK" = "BLACK NON HISPANIC", 
+                  "WHITE" = "WHITE NON HISPANIC")))
   
 ```
 
@@ -140,7 +143,7 @@ baby_name_tbl =
            values_from = "rank") %>%
     filter(childs_first_name == "OLIVIA") %>%
     select(-c("childs_first_name", "gender", "count"))
-knitr::kable(baby_name_tbl, caption = "Rank in Popularity for Name Olivia")
+knitr::kable(baby_name_tbl, caption = "Rank in Popularity for Baby's Name Olivia")
                
 ```
 
