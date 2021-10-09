@@ -11,18 +11,31 @@ library(readxl)
 # Problem 1
 
 ## Read Mr.Trash excel data and clean
+
+Named the data frame as trash_df and set the range to omit the note sections without any data.
+Removed all missing values (non-dumpster specific data) under dumpster column and mutated
+sports_balls column to integer from doubles.
+
 ```{r}
 trash_df = 
   read_excel("data/trash_wheel_updated.xlsx", sheet = "Mr. Trash Wheel", 
              range = cell_cols("A:N")) %>%
   janitor::clean_names() %>%
-  select(-"date") %>%
   drop_na(dumpster) %>%
   mutate(sports_balls = as.integer(sports_balls))
 ```
 
 
 ## Read Precipitation Data (2018 & 2019) then clean and bind
+
+Named the data frame as precip_df_2018 and precip_df_2019 and set the range to only 
+show observations and not totals. Renamed the Total column to precipitation_in 
+and added an additional column for year data was collected for both data sets.
+Arranged both data sets so that year variable comes first.
+
+Combined two data sets using bind_rows and changed month column to convert numeric 
+form of month to character month names.
+
 ```{r}
 precip_df_2018 =
   read_excel("data/trash_wheel_updated.xlsx", sheet = "2018 Precipitation", 
@@ -68,10 +81,11 @@ sum(pull(precip_df_2018, precipitation_in))
 median(pull(filter(trash_df, year == 2019), sports_balls))
 ```
 
-The Mr.Trash Wheel Data has 12 columns representing variables such as dumpster number, 
-month/year that specific dumpster was collected, weight and volume of the dumpster, 
-and 8 different types of trash categories. It has total of 454 rows representing the total 
-number of observations, or dumpster specific data, collected between May 2014 to January 2021.
+The Mr.Trash Wheel Data has 14 columns representing variables such as dumpster number, 
+month/year/date that specific dumpster was collected, weight and volume of the dumpster, 
+8 different types of trash categories, and homes powered. It has total of 454 rows 
+representing the total number of observations, or dumpster specific data, collected 
+between May 2014 to January 2021.
 
 The combined Precipitation Data during 2018 and 2019 has 3 columns for year and month of when 
 the data was collected and precipitation in inches. It has total of 24 rows representing the total
@@ -85,6 +99,14 @@ The median number of sports balls found in a dumpster in 2019 was 9.
 
 
 ## Part 1 Read and clean pols-month.csv
+
+Named the data frame as pols_month_df. Reorganized the date to have individual columns
+for year, month, and day each and converted month to character month name.
+Reorganized so prez_gop and prez_dem lined up together in order to use pivot_longer.
+Changed column names to gop and dem instead of prez_gop and prez_dem so when combined 
+together, any observation not 0 as its value will be reassigned to new values either 
+gop or dem. Rearranged so data set begins with year, month, and president variables.
+
 ```{r}
 pols_month_df =
   read_csv("data/fivethirtyeight_datasets/pols_month.csv") %>%
@@ -104,6 +126,11 @@ pols_month_df =
 
 ## Part 2 Read and clean snp.csv
 
+Named data frame as snp_df. Used lubridate::mdy() to convert date in m/d/yy form to
+yyyy-mm-dd format then separated to create columns for each year, month, and day.
+Converted month variable to full month name character, removed day column, and rearranged 
+according to year and month.
+
 ```{r}
 snp_df =
   read_csv("data/fivethirtyeight_datasets/snp.csv") %>%
@@ -116,6 +143,10 @@ snp_df =
 ```
 
 ## Part 3 Read and clean unemployment.csv
+
+Named the data frame as unemp_df and used pivot_longer to transform individual month 
+columns to one column named month. Converted abbreviated month names to numeric then to 
+full month name character.
 
 ```{r}
 unemp_df =
@@ -130,14 +161,19 @@ unemp_df =
 
 ## Join snp and pols data
 
+Combined pols_month and snp using left join by year and month variables.
+Converted year column as numeric (doubles column) instead of character column.
+
 ```{r}
 snp_pols_df =
-  left_join(pols_month_df, snp_df) %>%
+  left_join(pols_month_df, snp_df, by = c("year", "month")) %>%
   janitor::clean_names() %>%
   mutate(year = as.numeric(year))
 ```
 
 ## Join combined snp_pols with unemployment
+
+Combined the above snp_pols joined data to unemp data using left_join by year and month.
 
 ```{r}
 snp_pols_unemp_df =
@@ -182,6 +218,11 @@ of observations ranging from the years 1969 to 2068 every month.
 
 ## Load and clean baby_name data
 
+Named data frame as baby_name_df and used unique() to remove any duplicate observations.
+Rearranged so data started with year, rank, and name and arranged according to year and ethnicity.
+Recoded so all ethnicity variables are unified and changed ethnicity and childs_first_name
+values to be in lower case.
+
 ```{r}
 baby_name_df =
   read_csv("data/Popular_Baby_Names.csv") %>%
@@ -194,10 +235,17 @@ baby_name_df =
                   "WHITE NON HISP" = "WHITE NON HISPANIC"),
          ethnicity = str_to_lower(ethnicity),
          childs_first_name = str_to_lower(childs_first_name))
-  
 ```
 
 ## Create table for name Olivia
+
+Created a new data frame named baby_name_tbl for name Olivia only. Used pivot_wider to 
+assign individual columns for each ethnicity and the ranks to be their values.
+Removed all irrelevant columns for name Olivia.
+Created data frame for each ethnicity separately and removed all missing values. Then
+joined the 4 ethnicity based data frames together back again to show ranks of name 
+Olivia for each ethnicity each year.
+Created table using knitr::kable of the joined data frame.
 
 ```{r}
 baby_name_tbl = 
@@ -206,6 +254,7 @@ baby_name_tbl =
            values_from = "rank") %>%
     filter(childs_first_name == "olivia") %>%
     select(-c("childs_first_name", "gender", "count"))
+
 aapi_olivia = select(baby_name_tbl, year_of_birth, "asian and pacific islander") %>%
   drop_na("asian and pacific islander")
 bnh_olivia = select(baby_name_tbl, year_of_birth, "black non hispanic") %>%
@@ -214,11 +263,14 @@ h_olivia = select(baby_name_tbl, year_of_birth, "hispanic") %>%
   drop_na("hispanic")
 wnh_olivia = select(baby_name_tbl, year_of_birth, "white non hispanic") %>%
   drop_na("white non hispanic")
+
 olivia_tbl = left_join(aapi_olivia, left_join(bnh_olivia, left_join(h_olivia, wnh_olivia)))
 knitr::kable(olivia_tbl, caption = "Rank in Popularity for Baby's Name Olivia")
 ```
 
 ## Create table for popular male name Ethan
+
+Same flow as table for Olivia above except for baby name Ethan.
 
 ```{r}
 male_name_tbl = 
@@ -227,6 +279,7 @@ male_name_tbl =
            values_from = "rank") %>%
     filter(childs_first_name == "ethan") %>%
     select(-c("childs_first_name", "gender", "count"))
+
 aapi_ethan = select(male_name_tbl, year_of_birth, "asian and pacific islander") %>%
   drop_na("asian and pacific islander")
 bnh_ethan = select(male_name_tbl, year_of_birth, "black non hispanic") %>%
@@ -235,11 +288,16 @@ h_ethan = select(male_name_tbl, year_of_birth, "hispanic") %>%
   drop_na("hispanic")
 wnh_ethan = select(male_name_tbl, year_of_birth, "white non hispanic") %>%
   drop_na("white non hispanic")
+
 ethan_tbl = left_join(aapi_ethan, left_join(bnh_ethan, left_join(h_ethan, wnh_ethan)))
 knitr::kable(ethan_tbl, caption = "Rank in Popularity for Baby's Name Ethan")
 ```
 
 ## Scatter plot for names of white non hispanic male born in 2016
+
+Created a data frame named white_male_2016 first with only male names from 2016 ranked for 
+white non hispanic group. Then used ggplot()/geom_point to create scatter plot with rank 
+on x-axis and count on y-axis.
 
 ```{r}
 white_male_2016 =
